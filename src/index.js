@@ -3,6 +3,7 @@ const multer = require('multer');
 const { PutObjectCommand } = require('@aws-sdk/client-s3');
 const { s3Client } = require('./config/aws');
 const adminAuth = require('./middlewares/auth');
+const { createPendingVideo } = require('./services/videoService');
 const { randomUUID } = require('node:crypto');
 require('dotenv').config();
 
@@ -27,6 +28,10 @@ app.post('/admin/upload', adminAuth, upload.single('video'), async (req, res) =>
         const videoId = randomUUID();
         const fileExtension = file.originalname.split('.').pop();
         const s3Key = `raw-uploads/${videoId}.${fileExtension}`;
+
+        console.log(`Salvando metadados do vídeo ${videoId} no DynamoDB...`);
+
+        await createPendingVideo(videoId, videoTitle, s3Key);
 
         console.log(`Iniciando o upload do video ${videoTitle} (${videoId}) para o S3...`);
 
