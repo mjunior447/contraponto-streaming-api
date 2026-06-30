@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "Contraponto Streaming API",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -11,5 +11,10 @@
   "description": "",
   "dependencies": {
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0"
   }
 }
