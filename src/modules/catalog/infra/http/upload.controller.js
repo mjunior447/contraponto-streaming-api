@@ -1,6 +1,7 @@
 class UploadController {
-    constructor({ createVideoUseCase }) {
+    constructor({ createVideoUseCase, processVideoHlsUseCase }) {
         this.createVideoUseCase = createVideoUseCase;
+        this.processVideoHlsUseCase = processVideoHlsUseCase;
     }
 
     async handle(req, res) {
@@ -18,9 +19,17 @@ class UploadController {
 
             const result = await this.createVideoUseCase.execute({ videoTitle, file });
 
-            return res.status(201).json({
+            res.status(201).json({
                 message: 'Video registrado e enviado com sucesso. Iniciando processamento HLS...',
                 ...result
+            });
+
+            this.processVideoHlsUseCase.execute({
+                videoId: result.videoId,
+                videoTitle: videoTitle,
+                s3OriginalKey: result.s3Key
+            }).catch(err => {
+                console.error(`[Background-Transcoder-TESTE] Erro crítico no ID ${result.videoId}:`, err);
             });
         } catch (error) {
             console.error(`[Controller] Erro no fluxo: ${error.message || error}`);
