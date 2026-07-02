@@ -1,0 +1,48 @@
+service: contraponto-transcoder-service
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: dev
+  memorySize: 1024
+  timeout: 300
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+          Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/contraponto-videos"
+        
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+          Resource: "arn:aws:s3:::contraponto-streaming-bucket/*"
+
+  environment:
+    AWS_DYNAMODB_TABLE_NAME: "contraponto-videos"
+    AWS_S3_BUCKET_NAME: "contraponto-streaming-bucket"
+    AWS_REGION: ${aws:region}
+
+functions:
+  transcodeVideo:
+    handler: src/modules/transcoder/infra/lambda/handler.main
+    description: "Lambda for video transcoding"
+    layers:
+      - arn:aws:lambda:us-east-1:145266761615:layer:ffmpeg:4
+    events:
+      - s3:
+          bucket: contraponto-streaming-bucket
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: raw-uploads/
+            - suffix: .mp4
+          existing: true
