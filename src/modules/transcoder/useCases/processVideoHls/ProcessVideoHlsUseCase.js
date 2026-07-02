@@ -25,7 +25,11 @@ class ProcessVideoHlsUseCase {
             console.error('[TranscoderUseCase] Nao foi possivel recuperar titulo do banco. Usando titulo padrao');
         }
 
-        const tmpDir = path.join(__dirname, '../../../../../tmp', videoId);
+        // ajuste para o lambda encontrar os arquivos de transcodificacao
+        const isLambda = !!process.env.LAMBDA_TASK_ROOT;
+        const baseTmpDir = isLambda ? '/tmp' : path.join(__dirname, '../../../../../tmp');
+
+        const tmpDir = path.join(baseTmpDir, '../../../../../tmp', videoId);
         const inputPath = path.join(tmpDir, 'input.mp4');
         const outputDir = path.join(tmpDir, 'output');
 

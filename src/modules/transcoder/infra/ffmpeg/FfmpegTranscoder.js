@@ -1,6 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const ffmpegPath = require('ffmpeg-static');
 
 class FfmpegTranscoder {
     async execute(inputPath, outputDir) {
@@ -27,7 +28,7 @@ class FfmpegTranscoder {
 
             console.log('[FFmpeg] Executando comando...');
 
-            const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
+            const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
             // eslint-disable-next-line no-unused-vars
             ffmpegProcess.stderr.on("data", (data) => {
