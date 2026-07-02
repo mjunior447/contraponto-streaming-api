@@ -5,7 +5,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3333;
 
 app.get('/health', (req, res) => {
     res.json({
@@ -16,6 +16,6 @@ app.get('/health', (req, res) => {
 
 app.use(catalogRouter);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`O servidor está escutando na porta ${PORT}`);
 });
