@@ -10,8 +10,20 @@ class ProcessVideoHlsUseCase {
         this.transcoder = transcoder;
     }
 
-    async execute({ videoId, videoTitle, s3OriginalKey }) {
+    async execute({ videoId, s3OriginalKey }) {
         console.log(`[TranscoderUseCase] Iniciando processamento do video com ID ${videoId}`);
+
+        let videoTitle = 'video sem titulo';
+
+        try {
+            const savedVideo = await this.videoRepository.findById(videoId);
+            if (savedVideo) {
+                videoTitle = savedVideo.videoTitle;
+            }
+        // eslint-disable-next-line no-unused-vars
+        } catch(error) {
+            console.error('[TranscoderUseCase] Nao foi possivel recuperar titulo do banco. Usando titulo padrao');
+        }
 
         const tmpDir = path.join(__dirname, '../../../../../tmp', videoId);
         const inputPath = path.join(tmpDir, 'input.mp4');
@@ -23,6 +35,7 @@ class ProcessVideoHlsUseCase {
 
         try {
             console.log('[TranscoderUseCase] Baixando arquivo .mp4 do S3...');
+
             const s3Response = await s3Client.send(new GetObjectCommand({
                 Bucket: process.env.AWS_S3_BUCKET_NAME,
                 Key: s3OriginalKey,
@@ -33,6 +46,7 @@ class ProcessVideoHlsUseCase {
             await this.transcoder.execute(inputPath, outputDir);
 
             console.log('[TranscoderUseCase] Enviando fragmentos HLS para o S3...');
+
             const files = fs.readdirSync(outputDir);
 
             for (const file of files) {

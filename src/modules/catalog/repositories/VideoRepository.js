@@ -1,4 +1,4 @@
-const { PutItemCommand } = require('@aws-sdk/client-dynamodb');
+const { GetItemCommand, PutItemCommand } = require('@aws-sdk/client-dynamodb');
 const { dynamoDbClient } = require('../../../config/aws');
 
 class VideoRepository {
@@ -22,6 +22,35 @@ class VideoRepository {
         await dynamoDbClient.send(new PutItemCommand(params));
 
         console.log(`[Repository] Registro salvo no dynamoDB (status: ${video.status}).`);
+    }
+
+    async findById(videoId) {
+        const params = {
+            TableName: this.tableName,
+            Key: {
+                videoId: { S: videoId }
+            }
+        };
+
+        try {
+            const { Item } = await dynamoDbClient.send(new GetItemCommand(params));
+
+            if (!Item) {
+                return null;
+            }
+
+            return {
+                videoId: Item.videoId.S,
+                videoTitle: Item.videoTitle.S,
+                s3OriginalKey: Item.s3OriginalKey.S,
+                status: Item.status.S,
+                hlsUrl: Item.hlsUrl?.S || '',
+                createdAt: Item.createdAt.S,
+            };
+        } catch (error) {
+            console.error(`[Repository] Erro ao buscar video com ID ${videoId}: `, error);
+            throw error;
+        }
     }
 }
 
