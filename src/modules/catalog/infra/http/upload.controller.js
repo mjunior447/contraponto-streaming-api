@@ -5,7 +5,7 @@ class UploadController {
 
     async handle(req, res) {
         try {
-            console.log(`[Controller] Arquivo recebido: ${req.file?.originalname}`);
+            console.log(`[UploadController] Arquivo recebido: ${req.file?.originalname}`);
 
             const file = req.file;
             const { videoTitle } = req.body;
@@ -23,7 +23,7 @@ class UploadController {
                 ...result
             });
         } catch (error) {
-            console.error(`[Controller] Erro no fluxo: ${error.message || error}`);
+            console.error(`[UploadController] Erro no fluxo: ${error.message || error}`);
 
             if (error instanceof Error && error.message.includes('obrigatório')) {
                 return res.status(400).json({ error: error.message });

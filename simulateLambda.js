@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const { main } = require('./src/modules/transcoder/infra/lambda/handler');
 
-const VIDEO_ID_REAL = '75c2a536-6b12-4df3-af0a-7d55d42f7959';
+const VIDEO_ID_REAL = '';
 const S3_KEY_REAL = `raw-uploads/${VIDEO_ID_REAL}.mp4`;
 
 const mockS3Event = {

@@ -1,4 +1,4 @@
-const { GetItemCommand, PutItemCommand } = require('@aws-sdk/client-dynamodb');
+const { GetItemCommand, PutItemCommand, ScanCommand } = require('@aws-sdk/client-dynamodb');
 const { dynamoDbClient } = require('../../../config/aws');
 
 class VideoRepository {
@@ -49,6 +49,40 @@ class VideoRepository {
             };
         } catch (error) {
             console.error(`[Repository] Erro ao buscar video com ID ${videoId}: `, error);
+            throw error;
+        }
+    }
+
+    async findReadyVideos() {
+        const params = {
+            TableName: this.tableName,
+            FilterExpression: '#videoStatus = :statusVal',
+            ExpressionAttributeNames: {
+                '#videoStatus': 'status'
+            },
+            ExpressionAttributeValues: {
+                ':statusVal': { S: 'READY' }
+            }
+        };
+
+        try {
+            console.log(`[Repository] Buscando na tabela: "${this.tableName}"`);
+            
+            const { Items } = await dynamoDbClient.send(new ScanCommand(params));
+
+            if (!Items) {
+                return [];
+            }
+
+            return Items.map(item => ({
+                videoId: item.videoId.S,
+                videoTitle: item.videoTitle.S,
+                status: item.status.S,
+                hlsUrl: item.hlsUrl?.S || '',
+                createdAt: item.createdAt?.S || ''
+            }));
+        } catch (error) {
+            console.error('[Repository] Erro ao listar videos com status READY: ', error);
             throw error;
         }
     }
