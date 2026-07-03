@@ -30,9 +30,9 @@ class FfmpegTranscoder {
 
             const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
-            // eslint-disable-next-line no-unused-vars
             ffmpegProcess.stderr.on("data", (data) => {
-                // console.log(`[FFmpeg] Processamento do video: ${data}`);
+                // comente este log, caso queira deixar o console menos verboso
+                console.log(`[FFmpeg] Processando video: ${data}`);
             });
 
             ffmpegProcess.on("close", (code) => {
