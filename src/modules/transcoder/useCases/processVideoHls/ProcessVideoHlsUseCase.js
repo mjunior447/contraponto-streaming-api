@@ -20,16 +20,13 @@ class ProcessVideoHlsUseCase {
             if (savedVideo) {
                 videoTitle = savedVideo.videoTitle;
             }
-        // eslint-disable-next-line no-unused-vars
-        } catch(error) {
+            // eslint-disable-next-line no-unused-vars
+        } catch (error) {
             console.error('[TranscoderUseCase] Nao foi possivel recuperar titulo do banco. Usando titulo padrao');
         }
 
-        // ajuste para o lambda encontrar os arquivos de transcodificacao
-        const isLambda = !!process.env.LAMBDA_TASK_ROOT;
-        const baseTmpDir = isLambda ? '/tmp' : path.join(__dirname, '../../../../../tmp');
-
-        const tmpDir = path.join(baseTmpDir, '../../../../../tmp', videoId);
+        const baseTmpDir = path.join(__dirname, '../../../../../tmp');
+        const tmpDir = path.join(baseTmpDir, videoId);
         const inputPath = path.join(tmpDir, 'input.mp4');
         const outputDir = path.join(tmpDir, 'output');
 

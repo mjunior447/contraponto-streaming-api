@@ -19,7 +19,7 @@ class UploadController {
             const result = await this.createVideoUseCase.execute({ videoTitle, file });
 
             res.status(201).json({
-                message: 'Video registrado e enviado com sucesso. Iniciando processamento HLS...',
+                message: 'Video registrado e enviado com sucesso. O processamento HLS ja pode ser iniciado via script local',
                 ...result
             });
         } catch (error) {
