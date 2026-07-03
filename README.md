@@ -1,83 +1,82 @@
 
 # Contraponto Streaming API - Backend & Transcoder
 
-  
+This is the video management and transcoding service for the **Contraponto Streaming** platform. The architecture was designed following the principles of Clean Architecture and Domain Driven Design (DDD), isolating business rules from external infrastructure and ensuring high performance in media processing.
 
-Este é o microsserviço de gerenciamento e transcodificação de vídeo da plataforma **Contraponto Streaming**. A arquitetura foi projetada seguindo os princípios de Clean Architecture e Domain Driven Design (DDD), isolando regras de negócio da infraestrutura externa e garantindo alta performance no processamento de mídia.
-
-
-Originalmente planejado em um modelo Serverless usando AWS Lambda, o coração do processamento pesado de vídeos foi migrado para uma arquitetura local via script nativo. Essa decisão removeu limitações severas de tempo de execução (Timeout de 15 minutos do Lambda), reduziu custos de computação na nuvem e permitiu o processamento estável de conteúdos longos (vídeos com mais de 1 hora de duração).
+Originally planned in a Serverless model using AWS Lambda, the core of the heavy video processing was migrated to a local architecture via a native script. This decision removed severe execution time limitations (Lambda's 15-minute timeout), reduced cloud computing costs, and allowed stable processing of long-form content (videos over 1 hour long).
 
   
 
-## Arquitetura do sistema e fluxo de dados
+## System Architecture and Data Flow
+
+The system operates in a hybrid model: the heart of the system (the video transcoder) runs locally on the administrator's machine, consuming and integrating AWS cloud services (Amazon S3 and Amazon DynamoDB). Meanwhile, the API itself is hosted on Render, waiting for requests from the frontend to list videos that have already been processed and have the `READY` flag enabled.
 
   
 
-O sistema funciona de forma híbrida: o coração do sistema (o transcodificador de vídeos) roda localmente na máquina do administrador, consumindo e integrando os serviços da nuvem AWS (Amazon S3 e Amazon DynamoDB). Enquanto isso, a API em si fica no Render, aguardando requisições do front para a listagem de vídeos que já foram processados e que estejam com a flag READY.
+## How the Transcoding Flow Works
 
+Whenever a new video needs to be added to the platform, the controlled synchronous process follows this order:
 
-## Como funciona o fluxo de transcodificação
+1. Video Upload: The raw `.mp4` file is stored in the Amazon S3 Bucket, specifically in the `raw-uploads/` folder.
 
-Sempre que um novo vídeo precisa ser adicionado à plataforma, o processo síncrono controlado segue esta ordem:
-1. Upload de vídeo: O arquivo bruto `.mp4` é armazenado no Bucket do Amazon S3, especificamente na pasta `raw-uploads/`.
+2. Automation Trigger: The administrator configures the identification variables of the video to be processed (retrieving the `videoId` from S3 or DynamoDB) and executes the local script: `runTranscoder.js`.
 
-2. Disparo da Automação: O administrador configura as variáveis de identificação do vídeo que vai ser processado (pegando o videoId no S3 ou no DynamoDB) e executa o script local: `node runTranscoder.js`.
+3. Download and Cache: The use case `ProcessVideoHlsUseCase` fetches the initial metadata from DynamoDB (where the video status is marked as `PENDING`), downloads the original `.mp4` byte stream from the cloud, and writes a temporary file to disk (`/tmp/{videoId}/input.mp4`).
 
-3. Download e Cache: O caso de uso (`ProcessVideoHlsUseCase`) busca os metadados iniciais no DynamoDB (onde o status do vídeo consta como `PENDING`), faz o download do fluxo de bytes do `.mp4` original da nuvem e grava um arquivo temporário em disco (`/tmp/{videoId}/input.mp4`).
+4. HLS slicing via FFmpeg: The microservice triggers a `child_process` using FFmpeg (`ffmpeg-static`). The video is transcoded, optimized with frame rate adjustments, sliced into continuous 6-second segments (`.ts`), and tied together by a playlist file (`playlist.m3u8`), which will coordinate the playback of these segments on the frontend.
 
-4. Fatiamento HLS via FFmpeg: O microsserviço dispara um `child_process` utilizando o FFmpeg (`ffmpeg-static`). O vídeo é transcodificado, otimizado com taxa de quadros, fatiado em segmentos contínuos de 6 segundos (`.ts`) e amarrado por um arquivo de manifesto (`playlist.m3u8`), que é quem vai coordenar a reprodução dos segmentos lá no front.
+5. Bulk Upload: The backend reads the output folder and performs a batch upload of all generated HLS fragments back to S3 under the structure `streams/{videoId}/`.
 
-5. Upload em Massa: O backend faz a leitura da pasta de saída e realiza o upload em lote de todos os fragmentos HLS gerados de volta para o S3 sob a estrutura `streams/{videoId}/`.
+6. Availability: The video status in DynamoDB is updated to `READY`, and the `hlsUrl` field is injected with the definitive link to the playlist.
 
-6. Disponibilização: O status do vídeo no DynamoDB é atualizado para `READY` e o campo `hlsUrl` é injetado com o link definitivo do manifesto.
+7. Cleanup: The local temporary directory is completely wiped from the hard drive to prevent electronic trash accumulation.
 
-7. Limpeza: O diretório temporário local é completamente apagado do disco rígido para evitar acúmulo de lixo eletrônico.
+8. Frontend Usage: At the end of the process, the playlist file is publicly available on S3, ready to be consumed by a client.
 
-8. Uso no front: Ao final do processo, o arquivo de manifesto está disponível publicamente no S3, podendo ser consumido por um cliente
+## Technologies Used
 
-  
-
-## Tecnologias Utilizadas
 - Node.js
 - Express
-- Render para hospedagem da API
-- Transcoder FFmpeg via spawn process nativo
+- Render for API hosting
+- FFmpeg Transcoder via native spawn process
 - Amazon DynamoDB
 - Amazon S3
+  
+## Running Locally
 
-## Executando localmente
+### Prerequisites
+- Node.js v20.19 or higher installed
 
-### Pré-requisitos
-- Ter o Node.js v20.19 ou superior instalado
+### 1 - Configure environment variables
+Create a `.env` file in the root of the project and fill in the variable values:
 
-### 1 - Configurar variáveis de ambiente
-Crie um arquivo `.env` na raiz do projeto e preencha os valores das variáveis:
 ```
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=seu_access_key_aqui
-AWS_SECRET_ACCESS_KEY=seu_secret_key_aqui
-AWS_DYNAMODB_TABLE_NAME=sua_tabela_do_dynamodb
-AWS_S3_BUCKET_NAME=seu_bucket_do_s3
+AWS_ACCESS_KEY_ID=your_access_key_here
+AWS_SECRET_ACCESS_KEY=your_secret_key_here
+AWS_DYNAMODB_TABLE_NAME=your_dynamodb_table
+AWS_S3_BUCKET_NAME=your_s3_bucket
 ```
 
-### 3 - Instale as dependências
-Rode `npm install` na raiz do projeto
+### 2 - Install dependencies
+Run `npm install` in the root of the project.
 
-### 4 - Envie um vídeo através da API
-Você pode enviar via Postman, Insomnia ou outro client, fazendo uma requisição na rota `POST /admin/upload`. Essa requisição é autenticada e deve ser do tipo `form-data`. Configure a requisição assim:
-- No `header`, informe o `x-api-key` da API
-- No `body`, preencha
-	- O `videoTitle`, do tipo TEXT, com o nome do vídeo
-	- O `video`, do tipo FILE, com o arquivo .mp4 que vai subir
-- Caso tudo dê certo, a API vai retornar uma mensagem informando o videoId e a s3OriginalKey associada. Isso significa que o arquivo de vídeo foi armazenado no seu bucket do S3, na pasta `/raw-uploads`, com formato original .mp4
+### 3 - Upload a video through the API
+You can send it via Postman, Insomnia, or another client by making a request to the `POST /admin/upload` route. This request is authenticated and must be of type `form-data`. Configure the request as follows:
 
-### 5 - Transcodificação do video para HLS
-Para que o vídeo possa ser consumido sem travar o front, é feita a transcodificação, quebrando-o em segmentos de até 6 segundos, com formato `.ts`, sendo esses segmentos orquestrados pelo manifesto `.m3u8`. Para isso, faça:
-- Na raiz do projeto, encontre o arquivo `runTranscoder.js`
-- Nele, preencha a constante `videoId` com o id do vídeo enviado anteriormente
-- Rode o comando `node runTranscoder.js` para iniciar a transcodificação
-- Caso tudo dê certo, os arquivos de segmento `.ts` e o manifesto `.m3u8` terão sido gerados e estarão disponíveis publicamente no seu bucket do S3, dentro da pasta `/streams`
+- In the `header`, provide the API's `x-api-key`.
+- In the `body`, fill in:
+-  `videoTitle` (TEXT type) with the name of the video.
+-  `video` (FILE type) with the .mp4 file to be uploaded.
+- If everything goes well, the API will return a message stating the `videoId` and the associated `s3OriginalKey`. This means that the video file has been stored in your S3 bucket, inside the `/raw-uploads` folder, in its original .mp4 format.
 
-### 6 - Rota pública de listagem de vídeos
-A rota para listagem de vídeos cadastrados é `GET /videos`
+### 4 - Video Transcoding to HLS
+To ensure the video can be consumed without freezing the frontend, transcoding is performed by breaking it into segments of up to 6 seconds in `.ts` format, with these segments being orchestrated by the `.m3u8` playlist. To do this:
+
+- In the root of the project, locate the `runTranscoder.js` file.
+- Inside it, fill the `videoId` constant with the ID of the video previously uploaded.
+- Run the command `node runTranscoder.js` to start transcoding.
+- If everything goes well, the `.ts` segment files and the `.m3u8` playlist will have been generated and will be publicly available in your S3 bucket, inside the `/streams` folder.
+
+### Public Video Listing Route
+The route to list registered videos is `GET /videos`.
