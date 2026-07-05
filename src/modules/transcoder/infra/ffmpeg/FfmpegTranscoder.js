@@ -4,14 +4,12 @@ const fs = require('fs');
 const ffmpegPath = require('ffmpeg-static');
 
 class FfmpegTranscoder {
-    async execute(inputPath, outputDir) {
+    async transcodeVideo({ inputPath, outputDirPlaylist }) {
         return new Promise((resolve, reject) => {
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir, { recursive: true });
-            }
+            this.#ensureDirectoryExists(outputDirPlaylist);
 
-            const outputPlaylist = path.join(outputDir, 'playlist.m3u8');
-            const segmentPattern = path.join(outputDir, 'seg-%03d.ts');
+            const outputPlaylist = path.join(outputDirPlaylist, 'playlist.m3u8');
+            const segmentPattern = path.join(outputDirPlaylist, 'seg-%03d.ts');
 
             const ffmpegArgs = [
                 "-i", inputPath,
@@ -26,29 +24,77 @@ class FfmpegTranscoder {
                 outputPlaylist
             ];
 
-            console.log('[FFmpeg] Executando comando...');
+            this.#runFfmpeg('[FFmpeg:Video]', ffmpegArgs, outputPlaylist, resolve, reject);
+        });
+    }
 
-            const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
+    async createVideoPreview({ inputPath, outputDirPreview }) {
+        return new Promise((resolve, reject) => {
+            this.#ensureDirectoryExists(outputDirPreview);
 
-            ffmpegProcess.stderr.on("data", (data) => {
-                // comente este log, caso queira deixar o console menos verboso
-                console.log(`[FFmpeg] Processando video: ${data}`);
-            });
+            const outputPlaylist = path.join(outputDirPreview, 'playlist.m3u8');
+            const segmentPattern = path.join(outputDirPreview, 'seg-%03d.ts');
 
-            ffmpegProcess.on("close", (code) => {
-                if (code === 0) {
-                    console.log("[FFmpeg] Transcodificacao concluida com sucesso");
-                    resolve(outputPlaylist);
-                } else {
-                    console.error(`[FFmpeg] O processo foi encerrado com erro. Codigo de saida: ${code}`);
-                    reject(new Error(`FFmpeg falhou com o codigo ${code}`));
-                }
-            });
+            const ffmpegArgs = [
+                "-ss", "00:00:00",
+                "-t", "10",
+                "-i", inputPath,
+                "-profile:v", "main",
+                "-crf", "22",
+                "-sc_threshold", "0",
+                "-g", "48",
+                "-keyint_min", "48",
+                "-hls_time", "6",
+                "-hls_playlist_type", "event",
+                "-hls_segment_filename", segmentPattern,
+                outputPlaylist
+            ];
 
-            ffmpegProcess.on("error", (err) => {
-                console.error("[FFmpeg] Falha ao rodar o binario do FFmpeg:", err);
-                reject(err);
-            });
+            this.#runFfmpeg('[FFmpeg:Preview]', ffmpegArgs, outputPlaylist, resolve, reject);
+        });
+    }
+
+    async createVideoThumbnail({ inputPath, outputDirThumbnail }) {
+        return new Promise((resolve, reject) => {
+            this.#ensureDirectoryExists(outputDirThumbnail);
+
+            const outputThumbnail = path.join(outputDirThumbnail, 'thumbnail.jpg');
+
+            const ffmpegArgs = [
+                "-ss", "00:00:02",
+                "-i", inputPath,
+                "-vframes", "1",
+                "-q:v", "2",
+                outputThumbnail
+            ];
+
+            this.#runFfmpeg('[FFmpeg:Thumbnail]', ffmpegArgs, outputThumbnail, resolve, reject);
+        });
+    }
+
+    #ensureDirectoryExists(dirPath) {
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+    }
+
+    #runFfmpeg(contextTag, args, outputPath, resolve, reject) {
+        console.log(`${contextTag} Executando comando...`);
+        const ffmpegProcess = spawn(ffmpegPath, args);
+
+        ffmpegProcess.on("close", (code) => {
+            if (code === 0) {
+                console.log(`${contextTag} Processamento concluido com sucesso`);
+                resolve(outputPath);
+            } else {
+                console.error(`${contextTag} Encerrado com erro. Codigo de saida: ${code}`);
+                reject(new Error(`${contextTag} Falhou com o codigo ${code}`));
+            }
+        });
+
+        ffmpegProcess.on("error", (err) => {
+            console.error(`${contextTag} Falha ao rodar o binario:`, err);
+            reject(err);
         });
     }
 }

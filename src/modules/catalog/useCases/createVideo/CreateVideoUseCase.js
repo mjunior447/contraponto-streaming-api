@@ -8,7 +8,7 @@ class CreateVideoUseCase {
         this.videoRepository = videoRepository;
     }
 
-    async execute({ videoTitle, file }) {
+    async execute({ videoTitle, file, description }) {
         console.log(`[UseCase] Processando video '${videoTitle}'`);
 
         const videoId = randomUUID();
@@ -19,6 +19,7 @@ class CreateVideoUseCase {
         const video = new Video({
             videoId,
             videoTitle,
+            description,
             s3OriginalKey: s3Key
         });
 
