@@ -130,12 +130,14 @@ class ProcessVideoHlsUseCase {
         const savedVideoData = await this.videoRepository.findById(videoId);
 
         const description = savedVideoData ? savedVideoData.description : 'N/A';
+        const category = savedVideoData ? savedVideoData.category : 'N/A';
         const createdAt = savedVideoData ? savedVideoData.createdAt : new Date().toISOString();
 
         const updatedVideo = new Video({
             videoId,
             videoTitle,
             description,
+            category,
             s3OriginalKey,
             status: 'PENDING',
             createdAt

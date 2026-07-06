@@ -23,6 +23,7 @@ class VideoRepository {
                 description: formatString(video.description),
                 previewUrl: formatString(video.previewUrl),
                 thumbnailUrl: formatString(video.thumbnailUrl),
+                category: formatString(video.category),
                 status: formatString(video.status),
                 hlsUrl: formatString(video.hlsUrl),
                 createdAt: formatString(video.createdAt),
@@ -60,6 +61,7 @@ class VideoRepository {
                 description: Item.description.S,
                 previewUrl: Item.previewUrl.S || '',
                 thumbnailUrl: Item.thumbnailUrl.S || '',
+                category: Item.category.S || '',
                 status: Item.status.S,
                 hlsUrl: Item.hlsUrl?.S || '',
                 createdAt: Item.createdAt.S,
@@ -98,6 +100,7 @@ class VideoRepository {
                 description: item.description.S,
                 previewUrl: item.previewUrl.S || '',
                 thumbnailUrl: item.thumbnailUrl.S || '',
+                category: item.category.S || '',
                 hlsUrl: item.hlsUrl?.S || '',
                 createdAt: item.createdAt?.S || ''
             }));

@@ -6,6 +6,7 @@ class Video {
         description,
         previewUrl,
         thumbnailUrl,
+        category,
         status = 'PENDING',
         hlsUrl = '',
         createdAt = new Date().toISOString()
@@ -16,6 +17,7 @@ class Video {
         this.description = description;
         this.previewUrl = previewUrl;
         this.thumbnailUrl = thumbnailUrl;
+        this.category = category;
         this.status = status;
         this.hlsUrl = hlsUrl;
         this.createdAt = createdAt;
@@ -34,6 +36,10 @@ class Video {
 
         if (!this.description || this.description.trim() === '') {
             throw new Error('O video precisa de uma descricao');
+        }
+
+        if (!this.category || this.category.trim() === '') {
+            throw new Error('O video precisa de uma categoria');
         }
     }
 

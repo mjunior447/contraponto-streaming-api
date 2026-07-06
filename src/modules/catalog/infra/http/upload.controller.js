@@ -8,7 +8,7 @@ class UploadController {
             console.log(`[UploadController] Arquivo recebido: ${req.file?.originalname}`);
 
             const file = req.file;
-            const { videoTitle, description } = req.body;
+            const { videoTitle, description, category } = req.body;
 
             if (!file) {
                 return res.status(400).json({
@@ -16,7 +16,7 @@ class UploadController {
                 });
             }
 
-            const result = await this.createVideoUseCase.execute({ videoTitle, file, description });
+            const result = await this.createVideoUseCase.execute({ videoTitle, file, description, category });
 
             res.status(201).json({
                 message: 'Video registrado e enviado com sucesso. O processamento HLS ja pode ser iniciado via script local',
