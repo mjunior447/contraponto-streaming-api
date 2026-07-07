@@ -28,7 +28,7 @@ class FfmpegTranscoder {
         });
     }
 
-    async createVideoPreview({ inputPath, outputDirPreview }) {
+    async createVideoPreview({ inputPath, outputDirPreview, startTime, duration }) {
         return new Promise((resolve, reject) => {
             this.#ensureDirectoryExists(outputDirPreview);
 
@@ -36,8 +36,8 @@ class FfmpegTranscoder {
             const segmentPattern = path.join(outputDirPreview, 'seg-%03d.ts');
 
             const ffmpegArgs = [
-                "-ss", "00:00:00",
-                "-t", "10",
+                "-ss", String(startTime),
+                "-t", String(duration),
                 "-i", inputPath,
                 "-profile:v", "main",
                 "-crf", "22",
@@ -54,14 +54,14 @@ class FfmpegTranscoder {
         });
     }
 
-    async createVideoThumbnail({ inputPath, outputDirThumbnail }) {
+    async createVideoThumbnail({ inputPath, outputDirThumbnail, seekTime }) {
         return new Promise((resolve, reject) => {
             this.#ensureDirectoryExists(outputDirThumbnail);
 
             const outputThumbnail = path.join(outputDirThumbnail, 'thumbnail.jpg');
 
             const ffmpegArgs = [
-                "-ss", "00:00:02",
+                "-ss", String(seekTime),
                 "-i", inputPath,
                 "-vframes", "1",
                 "-q:v", "2",

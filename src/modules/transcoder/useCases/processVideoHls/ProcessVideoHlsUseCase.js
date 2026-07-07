@@ -11,7 +11,7 @@ class ProcessVideoHlsUseCase {
         this.bucketName = process.env.AWS_S3_BUCKET_NAME;
     }
 
-    async execute({ videoId, s3OriginalKey }) {
+    async execute({ videoId, s3OriginalKey, previewOptions, thumbnailOptions }) {
         console.log(`[TranscoderUseCase] Iniciando processamento do video com ID ${videoId}`);
 
         const videoTitle = await this.#getVideoTitle(videoId);
@@ -44,13 +44,16 @@ class ProcessVideoHlsUseCase {
 
             await this.transcoder.createVideoPreview({
                 inputPath: paths.originalVideo,
-                outputDirPreview: paths.outputPreview
+                outputDirPreview: paths.outputPreview,
+                startTime: previewOptions.startTime,
+                duration: previewOptions.duration
             });
             await this.#uploadDirectoryToS3(paths.outputPreview, `streams/${videoId}/preview`);
 
             await this.transcoder.createVideoThumbnail({
                 inputPath: paths.originalVideo,
-                outputDirThumbnail: paths.outputThumbnail
+                outputDirThumbnail: paths.outputThumbnail,
+                seekTime: thumbnailOptions.seekTime
             });
             await this.#uploadSingleFileToS3(
                 path.join(paths.outputThumbnail, 'thumbnail.jpg'),
