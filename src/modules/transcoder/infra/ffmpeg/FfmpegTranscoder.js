@@ -80,7 +80,8 @@ class FfmpegTranscoder {
 
     #runFfmpeg(contextTag, args, outputPath, resolve, reject) {
         console.log(`${contextTag} Executando comando...`);
-        const ffmpegProcess = spawn(ffmpegPath, args);
+
+        const ffmpegProcess = spawn(ffmpegPath, args, { stdio: 'inherit' });
 
         ffmpegProcess.on("close", (code) => {
             if (code === 0) {

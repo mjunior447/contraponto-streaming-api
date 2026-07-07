@@ -13,9 +13,9 @@ async function runLocal() {
     });
 
     const videoId = '';
-    const thumbnailSeekTime = '00:01:16' // no formato HH:MM:SS. Ex: '00:00:15'
-    const previewStartTime = '00:01:16' // no formato HH:MM:SS. Ex: '00:01:30'
-    const previewDuration = '8' // em segundos. Ex: '8'
+    const thumbnailSeekTime = '00:00:04' // no formato HH:MM:SS. Ex: '00:00:15'
+    const previewStartTime = '00:04:50' // no formato HH:MM:SS. Ex: '00:01:30'
+    const previewDuration = '39' // em segundos. Ex: '8'
     const s3OriginalKey = `raw-uploads/${videoId}.mp4`;
 
     console.log('[Local Transcoder] Iniciando transcodificacao...');

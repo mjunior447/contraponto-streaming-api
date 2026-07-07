@@ -1,6 +1,7 @@
 const { GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
+const { pipeline } = require('stream/promises'); // CORREÇÃO: Adicionado para stream estável de arquivos grandes
 const { s3Client } = require('../../../../config/aws');
 const { Video } = require('../../../catalog/domain/Video');
 
@@ -92,19 +93,21 @@ class ProcessVideoHlsUseCase {
     }
 
     async #downloadOriginalVideo(s3OriginalKey, localPath) {
-        console.log('[TranscoderUseCase] Baixando arquivo .mp4 do S3...');
+        console.log('[TranscoderUseCase] Baixando arquivo .mp4 do S3 por streams...');
         const s3Response = await s3Client.send(new GetObjectCommand({
             Bucket: this.bucketName,
             Key: s3OriginalKey,
         }));
-        fs.writeFileSync(localPath, await s3Response.Body.transformToByteArray());
+
+        const writeStream = fs.createWriteStream(localPath);
+        await pipeline(s3Response.Body, writeStream);
     }
 
     async #uploadSingleFileToS3(localFilePath, s3Key, contentType) {
         await s3Client.send(new PutObjectCommand({
             Bucket: this.bucketName,
             Key: s3Key,
-            Body: fs.readFileSync(localFilePath),
+            Body: fs.createReadStream(localFilePath),
             ContentType: contentType,
         }));
     }
@@ -112,13 +115,16 @@ class ProcessVideoHlsUseCase {
     async #uploadDirectoryToS3(localDirectoryPath, s3TargetFolder) {
         console.log(`[TranscoderUseCase:Upload] Enviando arquivos para o S3...`);
         const files = fs.readdirSync(localDirectoryPath);
+        let fileNumber = 1;
 
         for (const file of files) {
+            console.log(`[TranscoderUseCase:Upload] Enviando arquivo ${fileNumber} de ${files.length} para o S3...`);
             const filePath = path.join(localDirectoryPath, file);
             const s3Key = `${s3TargetFolder}/${file}`;
             const contentType = file.endsWith('.m3u8') ? 'application/x-mpegURL' : 'video/MP2T';
 
             await this.#uploadSingleFileToS3(filePath, s3Key, contentType);
+            fileNumber++;
         }
     }
 
